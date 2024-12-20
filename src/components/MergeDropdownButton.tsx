@@ -15,6 +15,7 @@ const MergeDropdownButton: React.FC<MergeDropdownButtonProps> = ({
   const merge = intl.formatMessage({ id: "actions.merge" });
   return (
     <DropdownButton
+      disabled={props.disabled}
       id="merge-performer-dropdown-button"
       title={merge + "..."}
       variant="secondary"
@@ -34,6 +35,9 @@ const MergeDropdownButton: React.FC<MergeDropdownButtonProps> = ({
 export default MergeDropdownButton;
 
 interface MergeDropdownButtonProps {
+  /** Whether the button is disabled. */
+  disabled: boolean;
+
   /** Component can't access intl for some reason, so it needs to be passed.
    * */
   intl: IntlShape;

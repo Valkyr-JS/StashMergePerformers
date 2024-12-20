@@ -17,12 +17,13 @@ PluginApi.patch.instead("PerformerDetailsPanel", function (props, _, Original) {
   /* ----------------------------------------- Fetch data ----------------------------------------- */
 
   const [apiKey, setApiKey] = React.useState<ConfigGeneralResult["apiKey"]>("");
+  const [needsAuth, setNeedsAuth] = React.useState(false);
   const [stashboxes, setStashboxes] = React.useState<StashBox[]>([]);
   const [thisPerformer, setThisPerformer] = React.useState<
     Performer | undefined
   >(undefined);
 
-  const query = `query { configuration { general { apiKey stashBoxes { endpoint name } } } }`;
+  const query = `query { configuration { general { apiKey password stashBoxes { endpoint name } } } }`;
 
   React.useEffect(() => {
     // Fetch Stashbox config data
@@ -31,6 +32,10 @@ PluginApi.patch.instead("PerformerDetailsPanel", function (props, _, Original) {
       if (res?.data) {
         setApiKey(res.data.configuration.general.apiKey);
         setStashboxes(res.data.configuration.general.stashBoxes);
+
+        // Set needsAuth to true if credentials have been set up for the Stash
+        // instance.
+        setNeedsAuth(res.data.configuration.general.password.length > 0);
       }
     });
 
@@ -85,28 +90,42 @@ PluginApi.patch.instead("PerformerDetailsPanel", function (props, _, Original) {
   const mergeBtnExists =
     document.querySelector("#" + mergeButtonRootID) !== null;
 
-  if (elDetailsEdit && !mergeBtnExists) {
-    // Create the root for the buttons
-    const elButtonRoot = document.createElement("div");
-    elButtonRoot.setAttribute("id", mergeButtonRootID);
+  React.useEffect(() => {
+    if (elDetailsEdit && !mergeBtnExists) {
+      // Create the root for the buttons
+      const elButtonRoot = document.createElement("div");
+      elButtonRoot.setAttribute("id", mergeButtonRootID);
 
-    // If the delete button has been found, set the button root before it.
-    // Otherwise, add it to the end of the .details-edit container.
-    elDeleteButton
-      ? elDeleteButton.before(elButtonRoot)
-      : elDetailsEdit.append(elButtonRoot);
+      // If the delete button has been found, set the button root before it.
+      // Otherwise, add it to the end of the .details-edit container.
+      elDeleteButton
+        ? elDeleteButton.before(elButtonRoot)
+        : elDetailsEdit.append(elButtonRoot);
 
-    // Deprecated in React but still available via the Plugin API at time of
-    // development.
-    ReactDOM.render(
-      <MergeDropdownButton
-        intl={intl}
-        mergeFromClickHandler={handleMergeFromClick}
-        mergeIntoClickHandler={handleMergeIntoClick}
-      />,
-      elButtonRoot
-    );
-  }
+      /**
+       * Deprecated in React but still available via the Plugin API at time of
+       * development.
+       *
+       * Disable the button if credentials have been enabled for the Stash
+       * instance, but an API key hasn't been generated.
+       */
+      ReactDOM.render(
+        <MergeDropdownButton
+          disabled={needsAuth && !apiKey.length}
+          intl={intl}
+          mergeFromClickHandler={handleMergeFromClick}
+          mergeIntoClickHandler={handleMergeIntoClick}
+        />,
+        elButtonRoot
+      );
+
+      if (needsAuth && !apiKey.length) {
+        console.error(
+          "It looks like you have credentials set up on your Stash instance, but have not generated an API key. Stash Mergers has been disabled to avoid errors. Go to 'Settings > Security > API Key > Generate API key' to enable Stash Mergers."
+        );
+      }
+    }
+  }, [apiKey, needsAuth]);
 
   /* ------------------------------------------ Component ----------------------------------------- */
 
@@ -125,6 +144,7 @@ PluginApi.patch.instead("PerformerDetailsPanel", function (props, _, Original) {
         thisPerformer={thisPerformer}
       />
       <MergeModal
+        apiKey={apiKey}
         destinationPerformer={destinationPerformer}
         mergeDirection={mergeDirection}
         setShow={setShowMergeModal}

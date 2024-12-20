@@ -1110,6 +1110,9 @@ const MergeModal: React.FC<MergeModalProps> = ({
 export default MergeModal;
 
 interface MergeModalProps {
+  /** The user's Stash app instance API key. */
+  apiKey: ConfigGeneralResult["apiKey"];
+
   /** Current data for the destination performer */
   destinationPerformer?: Performer;
 
