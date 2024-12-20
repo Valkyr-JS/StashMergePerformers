@@ -16,18 +16,22 @@ PluginApi.patch.instead("PerformerDetailsPanel", function (props, _, Original) {
 
   /* ----------------------------------------- Fetch data ----------------------------------------- */
 
+  const [apiKey, setApiKey] = React.useState<ConfigGeneralResult["apiKey"]>("");
   const [stashboxes, setStashboxes] = React.useState<StashBox[]>([]);
   const [thisPerformer, setThisPerformer] = React.useState<
     Performer | undefined
   >(undefined);
 
-  const query = `query { configuration { general { stashBoxes { endpoint name } } } }`;
+  const query = `query { configuration { general { apiKey stashBoxes { endpoint name } } } }`;
 
   React.useEffect(() => {
     // Fetch Stashbox config data
     fetchData<{ data: { configuration: ConfigResult } }>(query).then((res) => {
       console.log(res);
-      if (res?.data) setStashboxes(res.data.configuration.general.stashBoxes);
+      if (res?.data) {
+        setApiKey(res.data.configuration.general.apiKey);
+        setStashboxes(res.data.configuration.general.stashBoxes);
+      }
     });
 
     // Fetch data for the peformer whose page we're on.
